@@ -612,10 +612,22 @@ class Enemy {
       }
     }
     
-    // 1. 하늘을 나는 아기자기한 악마 (Flyer)의 공중 파도비행
+    // 1. 하늘을 나는 아기자기한 악마 (Flyer)의 활발한 추적 비행 (주인공을 향해 하강 돌진)
     if (this.type === 'flyer') {
-      this.spiritOffset += 0.12;
-      this.y = 200 + Math.sin(this.spiritOffset) * 20; // 공중에 떠서 위아래 흔들림
+      const tx = player.x + player.width/2;
+      const ty = player.y + player.height/2;
+      
+      const dx = tx - this.x;
+      const dy = ty - this.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      
+      if (dist > 10) {
+        // 주인공 방향으로 능동적으로 하강 돌격
+        this.x += (dx / dist) * Math.abs(this.vx);
+        this.y += (dy / dist) * Math.abs(this.vx) * 0.85;
+      } else {
+        this.x += this.vx;
+      }
     }
     // 2. 보스의 공포스러운 스톰핑 및 탄막 투척 패턴
     else if (this.type === 'boss') {
@@ -799,34 +811,49 @@ class Enemy {
         ctx.arc(cx, cy - 15, 4, 0, Math.PI*2);
         ctx.fill();
       }
-      // 2-2. [헤비 악마 비주얼]: 묵직한 돌덩어리 같은 육중하고 사각 형상의 외형
+      // 2-2. [헤비 악마 ➔ 거대 보디빌더형 중갑 대장장이/처형인 비주얼]: 육중한 가죽 앞치마와 거대 망치
       else if (this.type === 'heavy') {
-        ctx.fillStyle = '#0d0d12';
-        ctx.beginPath();
+        // 거대한 몸통 (대장장이 가죽 앞치마)
+        ctx.fillStyle = '#30180d'; // 가죽 갈색
+        ctx.fillRect(screenX + 4, this.y + 16, this.width - 8, this.height - 20);
+        ctx.strokeRect(screenX + 4, this.y + 16, this.width - 8, this.height - 20);
         
-        // 모서리가 각지고 가시가 달린 갑옷 같은 실루엣
-        ctx.rect(screenX, this.y, this.width, this.height);
-        ctx.fill();
-        ctx.stroke();
+        // 튼튼한 장화/다리
+        ctx.fillStyle = '#16171d';
+        ctx.fillRect(screenX + 8, this.y + this.height - 8, 10, 8);
+        ctx.fillRect(screenX + this.width - 18, this.y + this.height - 8, 10, 8);
         
-        // 돋아난 어깨 붉은 어깨가시
-        ctx.fillStyle = '#6e1a1a';
-        ctx.beginPath();
-        ctx.moveTo(screenX, this.y + 12);
-        ctx.lineTo(screenX - 12, this.y - 4);
-        ctx.lineTo(screenX + 10, this.y + 12);
-        ctx.moveTo(screenX + this.width, this.y + 12);
-        ctx.lineTo(screenX + this.width + 12, this.y - 4);
-        ctx.lineTo(screenX + this.width - 10, this.y + 12);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
+        // 묵직한 중갑 철모/후드
+        ctx.fillStyle = '#22232a';
+        ctx.fillRect(cx - 15, this.y + 2, 30, 16);
+        ctx.strokeRect(cx - 15, this.y + 2, 30, 16);
         
-        // 번쩍이는 세로눈 붉은 눈빛
+        // 철모 투구 슬릿 사이로 새어나오는 단 하나의 광기어린 붉은 외눈 (Accused red glow)
         ctx.fillStyle = '#ff1133';
-        ctx.fillRect(cx - 2, cy - 16, 4, 14);
+        ctx.fillRect(cx - 2, this.y + 8, 4, 4);
+        
+        // 거대한 처형인 대장장이 망치 (Executioner Sledgehammer)
+        ctx.save();
+        ctx.translate(cx + 10, cy + 5);
+        ctx.rotate(Math.sin(Date.now() / 150) * 0.15); // 스윙 대기 모션 흔들림
+        
+        // 망치 손잡이 (나무 자루)
+        ctx.strokeStyle = '#4e331b';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, 15);
+        ctx.lineTo(0, -32);
+        ctx.stroke();
+        
+        // 대형 철퇴 헤드
+        ctx.fillStyle = '#111215';
+        ctx.strokeStyle = '#a62b2b';
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(-12, -40, 24, 14);
+        ctx.strokeRect(-12, -40, 24, 14);
+        ctx.restore();
       }
-      // 2-3. [플라이어 악마 비주얼]: 작은 구체 + 날렵하게 퍼덕이는 가죽날개
+      // 2-3. [플라이어 악마 비주얼]: 작은 구체 + 날렵하게 퍼덕이는 가죽날개 (주인공 추적용 박쥐 형상)
       else if (this.type === 'flyer') {
         ctx.fillStyle = '#07070a';
         // 본체 원
@@ -859,31 +886,65 @@ class Enemy {
         ctx.fillStyle = '#ff0033';
         ctx.fillRect(cx - 2, cy - 2, 4, 4);
       }
-      // 2-4. [일반 악마 비주얼]: 뾰족뾰족 원형
+      // 2-4. [일반 악마 ➔ 누더기 두건을 쓴 무고한 농부/마녀 재판Accused Peasant 비주얼]: 인간 실루엣
       else {
+        // 누더기 짙은 잿빛 망토/두건
+        ctx.fillStyle = '#1c1d24'; // 남루한 Peasant 복장
         ctx.beginPath();
-        for (let i = 0; i < 16; i++) {
-          const angle = (i / 16) * Math.PI * 2;
-          const noise = Math.sin(angle * 5 + Date.now() / 80) * 4;
-          const px = cx + Math.cos(angle) * (r + noise);
-          const py = cy + Math.sin(angle) * (r + noise + 4);
-          
-          if (i === 0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        }
+        
+        // 몸통 망토 곡선
+        ctx.moveTo(screenX + 6, this.y + this.height);
+        ctx.lineTo(screenX + 2, this.y + 20);
+        ctx.quadraticCurveTo(cx, this.y + 12, screenX + this.width - 2, this.y + 20);
+        ctx.lineTo(screenX + this.width - 6, this.y + this.height);
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
+        
+        // 삐져나온 허름한 바지 단과 두 발
+        ctx.fillStyle = '#111115';
+        ctx.fillRect(screenX + 8, this.y + this.height - 4, 6, 4);
+        ctx.fillRect(screenX + this.width - 14, this.y + this.height - 4, 6, 4);
+        
+        // 머리를 깊게 덮은 남루한 두건 후드
+        ctx.fillStyle = '#0f1014';
+        ctx.beginPath();
+        ctx.arc(cx, this.y + 12, 10, 0, Math.PI*2);
+        ctx.fill();
+        ctx.stroke();
+        
+        // 두건 속 어두운 안면 섀도우 틈새로 아주 희미하게 빛나는 붉은 의심의 눈동자
+        ctx.fillStyle = '#ff3333';
+        ctx.fillRect(cx - 3, this.y + 11, 2, 2);
+        ctx.fillRect(cx + 1, this.y + 11, 2, 2);
 
-        // 양팔
-        ctx.fillStyle = '#020204';
-        ctx.fillRect(screenX - 3, this.y + 16 + Math.sin(Date.now()/50)*6, 6, 12);
-        ctx.fillRect(screenX + this.width - 3, this.y + 16 + Math.cos(Date.now()/50)*6, 6, 12);
-
-        // 눈
-        ctx.fillStyle = '#ff0033';
-        ctx.fillRect(cx - 5, cy - 6, 2, 2);
-        ctx.fillRect(cx + 3, cy - 6, 2, 2);
+        // 손에 쥐고 있는 마녀/이단의 상징으로 날조된 농사용 삼지창(Pitchfork)
+        ctx.save();
+        ctx.translate(screenX - 2, cy + 6);
+        ctx.rotate(-Math.PI / 10);
+        
+        // 나무 봉 자루
+        ctx.strokeStyle = '#4e331b';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(0, 16);
+        ctx.lineTo(0, -22);
+        ctx.stroke();
+        
+        // 삼지창 머리쇠 (철색 3개 포크)
+        ctx.strokeStyle = '#636573';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-5, -22);
+        ctx.lineTo(5, -22);
+        ctx.moveTo(-4, -22);
+        ctx.lineTo(-4, -30);
+        ctx.moveTo(0, -22);
+        ctx.lineTo(0, -32);
+        ctx.moveTo(4, -22);
+        ctx.lineTo(4, -30);
+        ctx.stroke();
+        ctx.restore();
       }
       
       ctx.restore();
