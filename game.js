@@ -553,35 +553,55 @@ class Enemy {
   constructor(x, y, type = 'normal') {
     this.x = x;
     this.y = y;
-    this.width = 36;
-    this.height = 56;
-    this.type = type; // normal, charger, ghost
+    this.type = type; // normal, heavy, flyer, boss
     
-    this.vx = type === 'charger' ? -1.8 : -1.0;
-    this.hp = type === 'charger' ? 15 : 10;
+    // 타입별 크기 및 스탯 정의 (보스는 다른 악마보다 3배 거대함)
+    if (type === 'boss') {
+      this.width = 100;
+      this.height = 150;
+      this.hp = 100;
+      this.maxHp = 100;
+      this.damage = 30; // 보스 타격 데미지
+      this.vx = -0.3; // 느린 움직임
+    } else if (type === 'heavy') {
+      this.width = 46;
+      this.height = 70;
+      this.hp = 30; // 3대 버팀 (데미지 10 기준)
+      this.damage = 25; // 묵직한 한방 (-25hp)
+      this.vx = -0.4; // 매우 느리게 걸어옴
+    } else if (type === 'flyer') {
+      this.width = 24;
+      this.height = 24;
+      this.hp = 10; // 내가 한 대만 때려도 죽음
+      this.damage = 1; // 공격력 단 1
+      this.vx = -1.6;
+    } else { // normal
+      this.width = 36;
+      this.height = 56;
+      this.hp = 10;
+      this.damage = 15;
+      this.vx = -1.0;
+    }
+    
     this.isDead = false;
-    
-    // 등불 광원에 닿았는지 상태
     this.isLit = false;
-    this.litCooldown = 0; // 등불 밖으로 나갈 때의 딜레이
+    this.litCooldown = 0;
     
-    // 공격력
-    this.damage = type === 'charger' ? 25 : 15;
+    // 보스 패턴 타이머
+    this.bossAttackTimer = 0;
     
-    // 흐느끼는 실루엣의 프레임 연동용
+    // 애니메이션 오프셋
     this.spiritOffset = Math.random() * Math.PI * 2;
-    
-    // 사망 시 흩뿌림용
     this.deathOpacity = 1.0;
   }
 
-  update(player) {
+  update(player, gameInstance) {
     if (this.isDead) {
       this.deathOpacity -= 0.05;
       return;
     }
 
-    // 플레이어를 향해 천천히 걸어감
+    // 좌우 걷기/비행 연산
     this.x += this.vx;
     
     // 등불 피격(조사) 지속성 체크
@@ -592,10 +612,55 @@ class Enemy {
       }
     }
     
-    // 공중 흔들림 기믹 (ghost 몬스터)
-    if (this.type === 'ghost') {
-      this.spiritOffset += 0.08;
-      this.y = 380 - this.height - 30 + Math.sin(this.spiritOffset) * 12;
+    // 1. 하늘을 나는 아기자기한 악마 (Flyer)의 공중 파도비행
+    if (this.type === 'flyer') {
+      this.spiritOffset += 0.12;
+      this.y = 200 + Math.sin(this.spiritOffset) * 20; // 공중에 떠서 위아래 흔들림
+    }
+    // 2. 보스의 공포스러운 스톰핑 및 탄막 투척 패턴
+    else if (this.type === 'boss') {
+      this.y = 380 - this.height; // 지면에 고정
+      
+      this.bossAttackTimer++;
+      // 2.5초(150프레임)마다 플레이어 방향으로 붉은 유도 파이어볼 발사
+      if (this.bossAttackTimer > 150 && gameInstance) {
+        this.bossAttackTimer = 0;
+        
+        // 보스 앞 중심에서 발사
+        const bx = this.x;
+        const by = this.y + this.height / 2;
+        
+        // 플레이어 중심 방향으로 날아가기 위한 속도 벡터 구하기
+        const px = player.x + player.width/2;
+        const py = player.y + player.height/2;
+        const dx = px - bx;
+        const dy = py - by;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        
+        const speed = 4.5;
+        const vx = (dx / dist) * speed;
+        const vy = (dy / dist) * speed;
+        
+        // 게임 인스턴스에 탄환 생성
+        if (gameInstance.bossProjectiles) {
+          gameInstance.bossProjectiles.push({
+            x: bx,
+            y: by,
+            vx: vx,
+            vy: vy,
+            size: 8,
+            damage: 15,
+            isDead: false
+          });
+          // 보스 전용 오디오 소리 (슬라이더 고주파음)
+          try {
+            gameInstance.audioEngine.playPlayerHurtSound(); 
+          } catch(e) {}
+        }
+      }
+    } else {
+      // 일반/헤비 지상 유닛 지면 밀착
+      this.y = 380 - this.height;
     }
   }
 
@@ -616,76 +681,212 @@ class Enemy {
       ctx.globalAlpha = this.deathOpacity;
     }
 
-    // 광원에 노출되었을 때: 고뇌하며 머리를 감싸쥔 '무고한 인간 실루엣(Weeping Human)'으로 시각 반전
+    // 1. 광원(등불)에 노출되었을 때: 참회하는 나약한 인간 실루엣(Weeping Spirit)
     if (this.isLit) {
       ctx.save();
-      // 은은한 하늘빛/연보라색 슬픈 영혼의 아우라
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = this.type === 'boss' ? 25 : 10;
       ctx.shadowColor = 'rgba(100, 200, 255, 0.6)';
       
       const glow = Math.sin(Date.now() / 100) * 0.15 + 0.85;
       ctx.globalAlpha = (this.isDead ? this.deathOpacity : glow) * 0.9;
       
-      // 인간 실루엣 드로잉
-      ctx.fillStyle = '#a6c5e8'; // 파란빛을 띄는 나약한 영혼
+      // 영혼 색상 (보스 영혼은 특별한 금빛/자주색 혼합)
+      ctx.fillStyle = this.type === 'boss' ? '#dfbeeb' : '#a6c5e8';
       
-      // 영혼의 몸통
+      // 영혼 몸통 스케일링 드로잉
       ctx.beginPath();
-      ctx.moveTo(screenX + 8, this.y + this.height);
-      ctx.quadraticCurveTo(screenX + 4, this.y + 20, screenX + this.width/2, this.y + 12);
-      ctx.quadraticCurveTo(screenX + this.width - 4, this.y + 20, screenX + this.width - 8, this.y + this.height);
+      ctx.moveTo(screenX + this.width * 0.22, this.y + this.height);
+      ctx.quadraticCurveTo(screenX + this.width * 0.11, this.y + this.height * 0.35, screenX + this.width/2, this.y + this.height * 0.2);
+      ctx.quadraticCurveTo(screenX + this.width * 0.89, this.y + this.height * 0.35, screenX + this.width * 0.78, this.y + this.height);
       ctx.closePath();
       ctx.fill();
       
-      // 영혼의 엎드린 슬픈 머리
+      // 영혼 머리
       ctx.beginPath();
-      ctx.arc(screenX + this.width/2, this.y + 10, 8, 0, Math.PI*2);
+      ctx.arc(screenX + this.width/2, this.y + this.height * 0.18, this.width * 0.22, 0, Math.PI*2);
       ctx.fill();
       
-      // 절망한 팔 (머리를 부둥켜안은 모션)
-      ctx.strokeStyle = '#cbe0f5';
-      ctx.lineWidth = 3;
+      // 머리를 감싸안은 슬픈 팔
+      ctx.strokeStyle = this.type === 'boss' ? '#f0d5f8' : '#cbe0f5';
+      ctx.lineWidth = this.type === 'boss' ? 5 : 3;
       ctx.beginPath();
-      ctx.moveTo(screenX + 6, this.y + 24);
-      ctx.lineTo(screenX + this.width/2 - 2, this.y + 12);
-      ctx.moveTo(screenX + this.width - 6, this.y + 24);
-      ctx.lineTo(screenX + this.width/2 + 2, this.y + 12);
+      ctx.moveTo(screenX + this.width * 0.16, this.y + this.height * 0.43);
+      ctx.lineTo(screenX + this.width/2 - 4, this.y + this.height * 0.22);
+      ctx.moveTo(screenX + this.width * 0.84, this.y + this.height * 0.43);
+      ctx.lineTo(screenX + this.width/2 + 4, this.y + this.height * 0.22);
       ctx.stroke();
       
       ctx.restore();
-    } else {
-      // 일반 상태: 뾰족뾰족하고 그로테스크한 시꺼먼 그림자 악마 (타자화된 이미지)
-      ctx.fillStyle = '#07070a';
-      ctx.shadowBlur = 0;
+    } 
+    // 2. 일반 상태: 뾰족뾰족하고 기괴한 그림자 악마 (어두운 몸체 + 붉은색 강렬한 아웃라인 추가로 높은 구별력 확보)
+    else {
+      ctx.save();
       
-      // 울퉁불퉁한 구체 형태의 가시 돋친 괴물 형상 드로잉
-      ctx.beginPath();
+      // 악마들의 전반적인 아웃라인 선 스타일 지정
+      ctx.strokeStyle = '#a62b2b'; // 어두운 붉은색 강렬한 아웃라인
+      ctx.lineWidth = this.type === 'boss' ? 4 : 2;
+      ctx.fillStyle = '#0a0a0f'; // 검정 몸체
+      
       const cx = screenX + this.width / 2;
       const cy = this.y + this.height / 2;
       const r = this.width / 2;
       
-      for (let i = 0; i < 16; i++) {
-        const angle = (i / 16) * Math.PI * 2;
-        // 삐죽삐죽거리는 형상을 구현하기 위해 사인 노이즈 부여
-        const noise = Math.sin(angle * 5 + Date.now() / 80) * 4;
-        const px = cx + Math.cos(angle) * (r + noise);
-        const py = cy + Math.sin(angle) * (r + noise + 4);
+      // 2-1. [보스 악마 비주얼]: 거대한 뿔, 등 뒤에 펄럭이는 붉은 기형 날개, 가슴 속 불타는 눈
+      if (this.type === 'boss') {
+        // 날개 드로잉 (펄럭임)
+        ctx.fillStyle = '#4a0e0e';
+        ctx.strokeStyle = '#a62b2b';
         
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
+        const wingFlap = Math.sin(Date.now() / 200) * 15;
+        
+        // 왼쪽 날개
+        ctx.beginPath();
+        ctx.moveTo(cx - 20, cy - 20);
+        ctx.lineTo(cx - 100, cy - 80 + wingFlap);
+        ctx.lineTo(cx - 60, cy + 20);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // 오른쪽 날개
+        ctx.beginPath();
+        ctx.moveTo(cx + 20, cy - 20);
+        ctx.lineTo(cx + 100, cy - 80 - wingFlap);
+        ctx.lineTo(cx + 60, cy + 20);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // 보스 본체 (초거대 울퉁불퉁 덩치)
+        ctx.fillStyle = '#08080c';
+        ctx.strokeStyle = '#ff1133'; // 보스는 아웃라인을 더 새빨갛게!
+        ctx.beginPath();
+        
+        for (let i = 0; i < 24; i++) {
+          const angle = (i / 24) * Math.PI * 2;
+          const noise = Math.sin(angle * 6 + Date.now() / 60) * 8;
+          const px = cx + Math.cos(angle) * (r + noise);
+          const py = cy + Math.sin(angle) * (r + noise + 10);
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // 머리 가시 거대 뿔
+        ctx.fillStyle = '#040406';
+        ctx.strokeStyle = '#a62b2b';
+        ctx.beginPath();
+        ctx.moveTo(cx - 30, cy - 50);
+        ctx.quadraticCurveTo(cx - 60, cy - 110, cx - 75, cy - 90);
+        ctx.quadraticCurveTo(cx - 40, cy - 60, cx - 10, cy - 60);
+        ctx.moveTo(cx + 30, cy - 50);
+        ctx.quadraticCurveTo(cx + 60, cy - 110, cx + 75, cy - 90);
+        ctx.quadraticCurveTo(cx + 40, cy - 60, cx + 10, cy - 60);
+        ctx.stroke();
+        ctx.fill();
+        
+        // 가슴의 붉게 타오르는 대형 코어 눈동자 (Boss Eye)
+        ctx.fillStyle = '#ff0033';
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#ff1133';
+        ctx.beginPath();
+        ctx.arc(cx, cy - 15, 12, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff'; // 눈부신 코어 중심
+        ctx.beginPath();
+        ctx.arc(cx, cy - 15, 4, 0, Math.PI*2);
+        ctx.fill();
       }
-      ctx.closePath();
-      ctx.fill();
+      // 2-2. [헤비 악마 비주얼]: 묵직한 돌덩어리 같은 육중하고 사각 형상의 외형
+      else if (this.type === 'heavy') {
+        ctx.fillStyle = '#0d0d12';
+        ctx.beginPath();
+        
+        // 모서리가 각지고 가시가 달린 갑옷 같은 실루엣
+        ctx.rect(screenX, this.y, this.width, this.height);
+        ctx.fill();
+        ctx.stroke();
+        
+        // 돋아난 어깨 붉은 어깨가시
+        ctx.fillStyle = '#6e1a1a';
+        ctx.beginPath();
+        ctx.moveTo(screenX, this.y + 12);
+        ctx.lineTo(screenX - 12, this.y - 4);
+        ctx.lineTo(screenX + 10, this.y + 12);
+        ctx.moveTo(screenX + this.width, this.y + 12);
+        ctx.lineTo(screenX + this.width + 12, this.y - 4);
+        ctx.lineTo(screenX + this.width - 10, this.y + 12);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // 번쩍이는 세로눈 붉은 눈빛
+        ctx.fillStyle = '#ff1133';
+        ctx.fillRect(cx - 2, cy - 16, 4, 14);
+      }
+      // 2-3. [플라이어 악마 비주얼]: 작은 구체 + 날렵하게 퍼덕이는 가죽날개
+      else if (this.type === 'flyer') {
+        ctx.fillStyle = '#07070a';
+        // 본체 원
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI*2);
+        ctx.fill();
+        ctx.stroke();
+        
+        // 날렵하게 푸드덕거리는 박쥐 날개
+        const flap = Math.sin(Date.now() / 60) * 12;
+        ctx.fillStyle = '#3a0808';
+        
+        ctx.beginPath();
+        ctx.moveTo(cx - 6, cy);
+        ctx.lineTo(cx - 25, cy - 14 + flap);
+        ctx.lineTo(cx - 15, cy + 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(cx + 6, cy);
+        ctx.lineTo(cx + 25, cy - 14 - flap);
+        ctx.lineTo(cx + 15, cy + 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // 눈
+        ctx.fillStyle = '#ff0033';
+        ctx.fillRect(cx - 2, cy - 2, 4, 4);
+      }
+      // 2-4. [일반 악마 비주얼]: 뾰족뾰족 원형
+      else {
+        ctx.beginPath();
+        for (let i = 0; i < 16; i++) {
+          const angle = (i / 16) * Math.PI * 2;
+          const noise = Math.sin(angle * 5 + Date.now() / 80) * 4;
+          const px = cx + Math.cos(angle) * (r + noise);
+          const py = cy + Math.sin(angle) * (r + noise + 4);
+          
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
 
-      // 그림자 날개/팔 기괴하게 흔들림
-      ctx.fillStyle = '#020204';
-      ctx.fillRect(screenX - 4, this.y + 16 + Math.sin(Date.now()/50)*6, 8, 12);
-      ctx.fillRect(screenX + this.width - 4, this.y + 16 + Math.cos(Date.now()/50)*6, 8, 12);
+        // 양팔
+        ctx.fillStyle = '#020204';
+        ctx.fillRect(screenX - 3, this.y + 16 + Math.sin(Date.now()/50)*6, 6, 12);
+        ctx.fillRect(screenX + this.width - 3, this.y + 16 + Math.cos(Date.now()/50)*6, 6, 12);
 
-      // 불타는 사악한 적안 (Red Demon Eyes)
-      ctx.fillStyle = '#ff0033';
-      ctx.fillRect(cx - 6, cy - 8, 3, 3);
-      ctx.fillRect(cx + 3, cy - 8, 3, 3);
+        // 눈
+        ctx.fillStyle = '#ff0033';
+        ctx.fillRect(cx - 5, cy - 6, 2, 2);
+        ctx.fillRect(cx + 3, cy - 6, 2, 2);
+      }
+      
+      ctx.restore();
     }
 
     ctx.restore();
@@ -820,6 +1021,9 @@ export class Game {
     // 파티클
     this.particles = [];
 
+    // 보스 발사 탄환 배열
+    this.bossProjectiles = [];
+
     // 의사 게이지 시스템 연동
     this.faith = 0;
     this.doubt = 0;
@@ -875,22 +1079,24 @@ export class Game {
     this.audioEngine.stop();
   }
 
-  // 몬스터 스폰 기믹
+  // 몬스터 스폰 기믹 (새로운 악마 배치: 비행, 강력탱커, 거대보스 배치)
   spawnEnemies() {
-    // 횡스크롤 맵 구간별로 적들 배치
+    // 횡스크롤 맵 구간별로 균형있게 배치
     const spawns = [
       { x: 450, type: 'normal' },
-      { x: 700, type: 'charger' },
-      { x: 900, type: 'ghost' },
-      { x: 1100, type: 'normal' },
-      { x: 1300, type: 'charger' },
-      { x: 1500, type: 'ghost' },
-      { x: 1700, type: 'charger' },
-      { x: 1900, type: 'normal' }
+      { x: 650, type: 'flyer' },
+      { x: 850, type: 'heavy' },
+      { x: 1050, type: 'flyer' },
+      { x: 1250, type: 'heavy' },
+      { x: 1450, type: 'flyer' },
+      { x: 1650, type: 'heavy' },
+      { x: 1950, type: 'boss' } // 마지막 구간 거대 보스 악마!
     ];
 
     spawns.forEach(sp => {
-      this.enemies.push(new Enemy(sp.x, 380 - 56, sp.type));
+      // flyer는 공중에 생성
+      const enemyY = sp.type === 'flyer' ? 200 : 380 - 56;
+      this.enemies.push(new Enemy(sp.x, enemyY, sp.type));
     });
   }
 
@@ -1042,12 +1248,13 @@ export class Game {
     // 3. 등불 마스킹에 연관된 몬스터 라이트 여부 연산
     this.enemies.forEach(enemy => {
       this.checkInsideLightCone(enemy);
-      enemy.update(this.player);
+      enemy.update(this.player, this); // gameInstance context 전달
       
-      // 살아있는 적의 충돌 박스로 피격 연산 (무적 딜레이 고려)
+      // 살아있는 적의 충돌 박스로 피격 연산 (무적 딜레이 고려, 보스/헤비 덩치를 감안한 충돌 박스 유연화)
       if (!enemy.isDead && !this.player.isGameOver) {
         const dist = Math.abs((this.player.x + this.player.width/2) - (enemy.x + enemy.width/2));
-        if (dist < 26 && Math.abs(this.player.y - enemy.y) < 40) {
+        const limitDist = enemy.type === 'boss' ? 55 : (enemy.type === 'heavy' ? 32 : 26);
+        if (dist < limitDist && Math.abs(this.player.y - enemy.y) < enemy.height) {
           const hurt = this.player.takeDamage(enemy.damage);
           if (hurt) {
             this.audioEngine.playPlayerHurtSound();
@@ -1061,6 +1268,37 @@ export class Game {
         }
       }
     });
+
+    // 3-2. 보스가 쏜 붉은 파이어볼 탄환 이동 및 충돌 연산
+    for (let i = this.bossProjectiles.length - 1; i >= 0; i--) {
+      const proj = this.bossProjectiles[i];
+      proj.x += proj.vx;
+      proj.y += proj.vy;
+      
+      // 화면 밖을 멀리 벗어나면 제거
+      if (proj.x < this.cameraX - 100 || proj.x > this.cameraX + this.canvas.width + 100) {
+        this.bossProjectiles.splice(i, 1);
+        continue;
+      }
+      
+      // 플레이어와 원형 충돌 판정
+      const px = this.player.x + this.player.width/2;
+      const py = this.player.y + this.player.height/2;
+      const dist = Math.sqrt(Math.pow(proj.x - px, 2) + Math.pow(proj.y - py, 2));
+      
+      if (dist < 26 && !this.player.isGameOver) {
+        const hurt = this.player.takeDamage(proj.damage);
+        if (hurt) {
+          this.audioEngine.playPlayerHurtSound();
+          // 피격 파티클
+          for (let j = 0; j < 5; j++) {
+            this.particles.push(new Particle(proj.x, proj.y, (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, '#ff1133', 2, 25, 'blood'));
+          }
+        }
+        // 탄환 소멸
+        this.bossProjectiles.splice(i, 1);
+      }
+    }
 
     // 4. 파티클 업데이트
     this.updateParticles();
@@ -1113,14 +1351,13 @@ export class Game {
   draw() {
     const ctx = this.ctx;
     
-    // [배경 레이어] 잿빛 안개 핀 스산한 실루엣
-    // 붉은 광선이 살짝 비치는 달/구름 실루엣
-    ctx.fillStyle = '#0e0f13';
+    // [배경 레이어] 잿빛 안개 핀 스산한 실루엣 (배경을 더욱 밝게 조율하여 시각적 구별력 극대화)
+    ctx.fillStyle = '#1e202b';
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     ctx.save();
-    // 원경 산맥/건물 도트
-    ctx.fillStyle = '#14151b';
+    // 원경 산맥/건물 도트 (배경 산을 대폭 밝혀 캐릭터 및 악마들의 검붉은 실루엣과 대비시킴)
+    ctx.fillStyle = '#313444';
     ctx.beginPath();
     ctx.moveTo(0, 380);
     ctx.lineTo(200 - this.cameraX*0.1, 280);
@@ -1183,6 +1420,25 @@ export class Game {
       }
     });
 
+    // [보스 탄환 드로우]
+    this.bossProjectiles.forEach(proj => {
+      ctx.save();
+      // 타오르는 붉은 불꽃 구체 연출
+      ctx.fillStyle = '#ff2244';
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = '#ff1133';
+      ctx.beginPath();
+      ctx.arc(proj.x - this.cameraX, proj.y, proj.size, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // 내부 코어 불빛
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(proj.x - this.cameraX, proj.y, proj.size * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+
     // [플레이어 드로우]
     this.player.draw(ctx, this.cameraX);
 
@@ -1211,7 +1467,7 @@ export class Game {
     
     // 전체 화면을 뒤덮는 스산하고 두터운 흑암 (의혹이 오를수록 어둠 비네팅이 두터워짐)
     const doubtRatio = this.doubt / (this.faith + this.doubt || 1);
-    const alphaDark = 0.45 + (doubtRatio * 0.15); // 의혹도가 높으면 최대 60% 어둠, 기본은 45%로 훨씬 부드러운 밝기
+    const alphaDark = 0.25 + (doubtRatio * 0.15); // 의혹도가 높으면 최대 40% 어둠, 기본은 25%로 훨씬 부드러운 밝기
     
     // 캔버스 자체 컴포지트 연산을 통해 빛나는 효과 제작
     // 임시 오프스크린처럼 마스킹 패스 생성
@@ -1356,6 +1612,36 @@ export class Game {
       ctx.font = '9px Inter';
       ctx.fillStyle = '#fff';
       ctx.fillText('(종 앞쪽에서 [J] 성검 타격 또는 [K] 등불 조사를 입력하세요)', this.canvas.width/2, 98);
+    }
+
+    // 4. [보스 체력 게이지 비주얼]: 보스가 생존해 있고 플레이어가 보스 결전 구역(x > 1500)에 진입한 경우
+    const boss = this.enemies.find(e => e.type === 'boss');
+    if (boss && !boss.isDead && this.player.x > 1500) {
+      const bx = this.canvas.width / 2 - 160;
+      const by = 30;
+      const bw = 320;
+      const bh = 12;
+      
+      // 보스 체력바 유리 배경틀
+      ctx.fillStyle = 'rgba(10, 10, 15, 0.75)';
+      ctx.strokeStyle = '#a62b2b';
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.strokeRect(bx, by, bw, bh);
+      
+      // 보스 체력 충전
+      const bossRatio = boss.hp / boss.maxHp;
+      ctx.fillStyle = '#ff1133';
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#ff3333';
+      ctx.fillRect(bx + 1, by + 1, (bw - 2) * bossRatio, bh - 2);
+      ctx.shadowBlur = 0; // 초기화
+      
+      // 보스 명칭 및 레이블 렌더링
+      ctx.fillStyle = '#ff3333';
+      ctx.font = '11px Cinzel';
+      ctx.textAlign = 'center';
+      ctx.fillText('심연의 군주 : 그림자 티탄 (SHADOW TITAN)', this.canvas.width / 2, by - 8);
     }
     
     ctx.restore();
