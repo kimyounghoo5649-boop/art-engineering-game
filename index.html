@@ -240,7 +240,8 @@
     <p class="footer-tagline">“Tenebrae non superabunt eam (어둠은 빛을 이기지 못하리라)”</p>
   </footer>
 
-  <!-- 메인 게임 자바스크립트 모듈 로드 -->
-  <script type="module" src="main.js"></script>
+  <!-- 메인 게임 자바스크립트 로드 (CORS 정책 방지 순차 로딩) -->
+  <script src="game.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>

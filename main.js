@@ -1,8 +1,4 @@
-/* ==========================================
-   AD LIMINA: 이단심문관의 등불 - 메인 자바스크립트 오케스트레이터
-   ========================================== */
 
-import { Game } from './game.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   

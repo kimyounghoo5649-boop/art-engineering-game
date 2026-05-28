@@ -436,8 +436,8 @@ class Player {
     return true;
   }
 
-  // 수동 드로잉 기반 절차적 픽셀 아트 스타일 구현
-  draw(ctx, cameraX) {
+  // 수동 드로잉 기반 절차적 픽셀 아트 스타일 구현 (마우스 실시간 조준을 위한 X, Y 커서 좌표 전달 수용)
+  draw(ctx, cameraX, mouseX, mouseY) {
     const screenX = this.x - cameraX;
     
     ctx.save();
@@ -1065,7 +1065,7 @@ class BellTower {
 // --------------------------------------------------
 // 6. 메인 게임 루프 매니저 (Main Game Engine)
 // --------------------------------------------------
-export class Game {
+class Game {
   constructor(canvas, callbacks) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
