@@ -558,7 +558,7 @@ class Enemy {
     this.type = type; // normal, charger, ghost
     
     this.vx = type === 'charger' ? -1.8 : -1.0;
-    this.hp = type === 'charger' ? 30 : 20;
+    this.hp = type === 'charger' ? 15 : 10;
     this.isDead = false;
     
     // 등불 광원에 닿았는지 상태
@@ -982,7 +982,7 @@ export class Game {
     const dy = ty - py;
     const dist = Math.sqrt(dx * dx + dy * dy);
     
-    const maxDist = 200; // 전방 서치 거리
+    const maxDist = 280; // 전방 서치 거리
     if (dist > maxDist) return false;
     
     // 타겟팅 각도 연산
@@ -996,7 +996,7 @@ export class Game {
     while (diff < -Math.PI) diff += Math.PI * 2;
     while (diff > Math.PI) diff -= Math.PI * 2;
     
-    const fov = Math.PI / 4; // 45도 부채꼴
+    const fov = Math.PI / 3; // 60도 부채꼴
     const isLit = Math.abs(diff) < fov;
     
     if (isLit) {
@@ -1211,7 +1211,7 @@ export class Game {
     
     // 전체 화면을 뒤덮는 스산하고 두터운 흑암 (의혹이 오를수록 어둠 비네팅이 두터워짐)
     const doubtRatio = this.doubt / (this.faith + this.doubt || 1);
-    const alphaDark = 0.7 + (doubtRatio * 0.15); // 의혹도가 높으면 최대 85% 어둠
+    const alphaDark = 0.45 + (doubtRatio * 0.15); // 의혹도가 높으면 최대 60% 어둠, 기본은 45%로 훨씬 부드러운 밝기
     
     // 캔버스 자체 컴포지트 연산을 통해 빛나는 효과 제작
     // 임시 오프스크린처럼 마스킹 패스 생성
@@ -1230,19 +1230,19 @@ export class Game {
     mctx.save();
     mctx.globalCompositeOperation = 'destination-out';
     
-    // 원형 빛 마스크 깎기
-    const playerRadGrad = mctx.createRadialGradient(px, py, 10, px, py, 60);
+    // 원형 빛 마스크 깎기 (반경을 95로 확장하여 훨씬 쾌적한 시야 확보)
+    const playerRadGrad = mctx.createRadialGradient(px, py, 15, px, py, 95);
     playerRadGrad.addColorStop(0, 'rgba(0,0,0,1)');
     playerRadGrad.addColorStop(1, 'rgba(0,0,0,0)');
     mctx.fillStyle = playerRadGrad;
     mctx.beginPath();
-    mctx.arc(px, py, 60, 0, Math.PI*2);
+    mctx.arc(px, py, 95, 0, Math.PI*2);
     mctx.fill();
 
-    // 등불(K키)이 켜져 있을 때 전방 부채꼴(Cone) 영역 깎기
+    // 등불(K키)이 켜져 있을 때 전방 부채꼴(Cone) 영역 깎기 (길이 280, 각도 60도로 확장)
     if (this.player.isIlluminating) {
-      const coneLength = 210;
-      const fov = Math.PI / 4; // 45도 부채꼴
+      const coneLength = 280;
+      const fov = Math.PI / 3; // 60도 부채꼴
       const centerAngle = this.player.direction === 1 ? 0 : Math.PI;
       
       const angle1 = centerAngle - fov;
@@ -1270,8 +1270,8 @@ export class Game {
     if (this.player.isIlluminating) {
       const px = this.player.x + this.player.width/2 - this.cameraX;
       const py = this.player.y + 24;
-      const coneLength = 210;
-      const fov = Math.PI / 4;
+      const coneLength = 280;
+      const fov = Math.PI / 3;
       const centerAngle = this.player.direction === 1 ? 0 : Math.PI;
       
       ctx.save();
