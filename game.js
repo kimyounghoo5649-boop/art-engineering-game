@@ -490,40 +490,55 @@ class Player {
     ctx.fillStyle = '#ff3333';
     ctx.fillRect(3, -h/2 + 6, 2, 2);
 
-    // 5. 성검/성등 장비 비주얼
-    // 5-1. 성검 (공격 중이 아닐 때는 등 뒤에, 공격 중에는 휘두름)
-    if (this.isAttacking) {
-      ctx.save();
-      // 휘두르는 애니메이션 각도 프레임
-      const progress = this.attackTimer / 15;
-      const angle = -Math.PI/3 + progress * Math.PI; // 아래에서 위로 호를 그리며 벰
-      ctx.rotate(angle);
+    // 5. [신성 석궁 (Holy Crossbow) 장비 비주얼 - 마우스 실시간 지향형 연출]
+    ctx.save();
+    // 어깨 관절 위치로 손잡이 피벗 조정
+    ctx.translate(w/2 - 4, 0);
+    
+    // 마우스 커서 각도에 따른 석궁 회전 연산
+    let armAngle = 0;
+    if (mouseX !== undefined && mouseY !== undefined) {
+      const psx = screenX + this.width / 2 + (w/2 - 4) * this.direction;
+      const psy = this.y + this.height / 2;
       
-      // 검날 (빛나는 강철색)
-      ctx.fillStyle = '#e2e2ee';
-      ctx.fillRect(0, -6, 42, 6);
-      
-      // 코브 가드 (황금 코브 가드)
-      ctx.fillStyle = '#d4af37';
-      ctx.fillRect(0, -9, 4, 12);
-      
-      // 가드 손잡이
-      ctx.fillStyle = '#3a2512';
-      ctx.fillRect(-8, -5, 8, 4);
-      ctx.restore();
-    } else {
-      // 대기 시 등에 메고 있는 성검
-      ctx.save();
-      ctx.translate(-w/2 + 4, 0);
-      ctx.rotate(Math.PI / 4);
-      ctx.fillStyle = '#6e707a';
-      ctx.fillRect(0, -6, 30, 4);
-      ctx.fillStyle = '#d4af37';
-      ctx.fillRect(0, -8, 2, 8);
-      ctx.restore();
+      // 플레이어가 보는 방향에 따른 각도 보정
+      if (this.direction === 1) {
+        armAngle = Math.atan2(mouseY - psy, mouseX - psx);
+      } else {
+        // 왼쪽을 바라볼 때는 대칭된 상대 각도 적용
+        armAngle = Math.atan2(mouseY - psy, psx - mouseX);
+      }
     }
+    
+    ctx.rotate(armAngle);
+    
+    // 5-1. 석궁 몸체 (황금과 강철재질)
+    ctx.fillStyle = '#3a2112'; // 목제 개석
+    ctx.fillRect(-6, -4, 26, 6);
+    ctx.strokeRect(-6, -4, 26, 6);
+    
+    // 5-2. 활시위 프레임 (금빛 림)
+    ctx.fillStyle = '#d4af37';
+    ctx.beginPath();
+    ctx.moveTo(14, -14);
+    ctx.lineTo(12, 0);
+    ctx.lineTo(14, 14);
+    ctx.lineTo(17, 14);
+    ctx.lineTo(15, 0);
+    ctx.lineTo(17, -14);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    
+    // 5-3. 장전된 황금 볼트 화살촉
+    if (this.attackCooldown === 0) {
+      ctx.fillStyle = '#ffcc00';
+      ctx.fillRect(4, -2, 12, 2); // 반짝이는 볼트
+    }
+    
+    ctx.restore();
 
-    // 5-2. 성등 (전방에 손으로 등불을 앞으로 치켜드는 모션)
+    // 5-2. 성등 (기존과 동일하게 등불 장비 모션)
     ctx.save();
     if (this.isIlluminating) {
       ctx.translate(w/2 - 2, 4);
@@ -1085,26 +1100,46 @@ export class Game {
     // 보스 발사 탄환 배열
     this.bossProjectiles = [];
 
+    // 플레이어 신성 석궁 화살(볼트) 배열
+    this.playerArrows = [];
+
+    // 마우스 커서 스크린 좌표 초기값
+    this.mouseX = canvas.width / 2;
+    this.mouseY = canvas.height / 2;
+
     // 의사 게이지 시스템 연동
     this.faith = 0;
     this.doubt = 0;
 
-    // 키보드 바인딩 리스너
+    // 마우스 이동 핸들러 (커서 방향으로 플레이어 시선 좌우 동적 플립)
+    this.mousemoveHandler = (e) => {
+      const rect = this.canvas.getBoundingClientRect();
+      this.mouseX = (e.clientX - rect.left) * (this.canvas.width / rect.width);
+      this.mouseY = (e.clientY - rect.top) * (this.canvas.height / rect.height);
+      
+      const psx = this.player.x + this.player.width/2 - this.cameraX;
+      if (this.mouseX > psx) {
+        this.player.direction = 1;
+      } else {
+        this.player.direction = -1;
+      }
+    };
+
+    // 마우스 좌클릭 시 신성 석궁 발사
+    this.mousedownHandler = (e) => {
+      if (e.button === 0) { // 좌클릭
+        this.audioEngine.init();
+        this.shootCrossbow();
+      }
+    };
+
+    // 키보드 바인딩 리스너 (석궁 발사 전용 변경으로 KeyJ는 더이상 직접 공격하지 않고 마우스 클릭으로 통일)
     this.keydownHandler = (e) => {
       this.keys[e.code] = true;
       
       // 오디오 강제 잠금 해제 제스처
-      if (['Space', 'KeyJ', 'KeyK', 'KeyA', 'KeyD', 'KeyW'].includes(e.code)) {
+      if (['Space', 'KeyK', 'KeyA', 'KeyD', 'KeyW'].includes(e.code)) {
         this.audioEngine.init();
-      }
-
-      // 성검 단발형 사운드 (공격 Cooldown 체크 및 발현)
-      if (e.code === 'KeyJ' && !this.player.isAttacking && this.player.attackCooldown === 0) {
-        this.player.isAttacking = true;
-        this.player.attackTimer = 0;
-        this.player.attackCooldown = 25; // 25프레임간 쿨다운
-        this.audioEngine.playSlashSound();
-        this.triggerAttackHitbox();
       }
 
       // 등불 사운드 켜기/끄기
@@ -1125,6 +1160,8 @@ export class Game {
     this.isRunning = true;
     window.addEventListener('keydown', this.keydownHandler);
     window.addEventListener('keyup', this.keyupHandler);
+    this.canvas.addEventListener('mousemove', this.mousemoveHandler);
+    this.canvas.addEventListener('mousedown', this.mousedownHandler);
     
     this.lastTime = performance.now();
     requestAnimationFrame((t) => this.loop(t));
@@ -1137,6 +1174,8 @@ export class Game {
     this.isRunning = false;
     window.removeEventListener('keydown', this.keydownHandler);
     window.removeEventListener('keyup', this.keyupHandler);
+    this.canvas.removeEventListener('mousemove', this.mousemoveHandler);
+    this.canvas.removeEventListener('mousedown', this.mousedownHandler);
     this.audioEngine.stop();
   }
 
@@ -1179,60 +1218,49 @@ export class Game {
     }
   }
 
-  // 공격 히트 판정 연산
-  triggerAttackHitbox() {
-    const range = 65; // 성검 리치
-    const swordLeft = this.player.direction === 1 ? this.player.x + this.player.width : this.player.x - range;
+  // 신성 석궁 발사 처리 연산 (마우스 지향 원거리 공격)
+  shootCrossbow() {
+    if (this.isGameOver) return;
+    if (this.player.attackCooldown > 0) return;
     
-    // 광원 투사 영역 체크용 수학 정의
-    const angleMin = this.player.direction === 1 ? -Math.PI/6 : Math.PI - Math.PI/6;
-    const angleMax = this.player.direction === 1 ? Math.PI/6 : Math.PI + Math.PI/6;
+    // 석궁 재장전 쿨다운 지정 (18프레임)
+    this.player.attackCooldown = 18;
     
-    this.enemies.forEach(enemy => {
-      if (enemy.isDead) return;
-      
-      // 전방 범위 충돌 판정
-      const insideX = enemy.x + enemy.width/2 >= swordLeft && enemy.x + enemy.width/2 <= swordLeft + range + enemy.width/2;
-      const insideY = Math.abs(enemy.y - this.player.y) < 60;
-      
-      if (insideX && insideY) {
-        // 등불에 노출되었는가?
-        const isCurrentlyLit = this.checkInsideLightCone(enemy);
-        
-        // 피격 성공
-        this.audioEngine.playHitSound();
-        
-        // 피격 파티클 비산 (Ember vs Blood)
-        const px = enemy.x + enemy.width/2;
-        const py = enemy.y + enemy.height/2;
-        
-        if (isCurrentlyLit) {
-          // 등불에 드러난 상태에서 뱀: 피비린내 나는 마녀사냥을 표상 (붉은 파티클)
-          for (let k = 0; k < 12; k++) {
-            this.particles.push(new Particle(px, py, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6 - 2, '#a62b2b', Math.random()*3 + 1, 40, 'blood'));
-          }
-          // 등불 조사를 동반했으므로 '의혹' 점수 증가
-          this.doubt += 15;
-          // 인간의 억울한 슬픈 소리 울림
-          this.audioEngine.playSoulScreamSound();
-        } else {
-          // 등불 조사 없이 맹목적으로 뱀: 신성한 불꽃으로 그림자를 정화한다고 여김 (금빛 파티클)
-          for (let k = 0; k < 12; k++) {
-            this.particles.push(new Particle(px, py, (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5 - 3, '#d4af37', Math.random()*2 + 1, 45, 'ember'));
-          }
-          // 신앙심 점수 증가
-          this.faith += 10;
-        }
-
-        // 데미지 전달
-        const died = enemy.takeDamage(10);
-        
-        // 게이지 UI 갱신 유도
-        if (this.callbacks.onStateUpdate) {
-          this.callbacks.onStateUpdate({ faith: this.faith, doubt: this.doubt });
-        }
-      }
+    // 석궁 쇠발줄 튕기는 날렵한 사운드 재생
+    this.audioEngine.playSlashSound();
+    
+    // 발사 시발점 (Hermann의 어깨 높이)
+    const px = this.player.x + this.player.width/2;
+    const py = this.player.y + 16;
+    
+    // 월드 좌표 기준의 마우스 클릭 지점 산출
+    const mx = this.mouseX + this.cameraX;
+    const my = this.mouseY;
+    
+    // 각도 연산
+    const angle = Math.atan2(my - py, mx - px);
+    
+    // 초고속 신성 볼트 화살 속도 정의
+    const speed = 11.5;
+    const vx = Math.cos(angle) * speed;
+    const vy = Math.sin(angle) * speed;
+    
+    // 볼트 객체 주입
+    this.playerArrows.push({
+      x: px,
+      y: py,
+      vx: vx,
+      vy: vy,
+      angle: angle,
+      size: 6,
+      damage: 10,
+      isDead: false
     });
+    
+    // 석궁 발사 시 뿜어지는 신성 가루 파티클 반동 이펙트
+    for (let i = 0; i < 5; i++) {
+      this.particles.push(new Particle(px, py, -Math.cos(angle) * 3 + (Math.random() - 0.5) * 2, -Math.sin(angle) * 3 + (Math.random() - 0.5) * 2, '#d4af37', 1.5, 20, 'ember'));
+    }
   }
 
   // 등불 빛 부채꼴 충돌 수학 판정
@@ -1330,7 +1358,7 @@ export class Game {
       }
     });
 
-    // 3-2. 보스가 쏜 붉은 파이어볼 탄환 이동 및 충돌 연산
+      // 3-2. 보스가 쏜 붉은 파이어볼 탄환 이동 및 충돌 연산
     for (let i = this.bossProjectiles.length - 1; i >= 0; i--) {
       const proj = this.bossProjectiles[i];
       proj.x += proj.vx;
@@ -1358,6 +1386,78 @@ export class Game {
         }
         // 탄환 소멸
         this.bossProjectiles.splice(i, 1);
+      }
+    }
+
+    // 3-3. 플레이어가 쏜 신성 석궁 화살(볼트) 이동 및 충돌 연산
+    for (let i = this.playerArrows.length - 1; i >= 0; i--) {
+      const arr = this.playerArrows[i];
+      arr.x += arr.vx;
+      arr.y += arr.vy;
+      
+      // 화살 비행 꼬리 불꽃 이펙트 (Trail Particles)
+      if (Math.random() < 0.45) {
+        this.particles.push(new Particle(arr.x, arr.y, (Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.5, '#ffd24d', 1.5, 15, 'ember'));
+      }
+      
+      // 화면 경계 밖 이격 화살 제거
+      if (arr.x < this.cameraX - 50 || arr.x > this.cameraX + this.canvas.width + 50) {
+        this.playerArrows.splice(i, 1);
+        continue;
+      }
+      
+      // 모든 생존 악마들과 정밀 구체 충돌 충돌 연산
+      let hitMonster = false;
+      for (let j = 0; j < this.enemies.length; j++) {
+        const enemy = this.enemies[j];
+        if (enemy.isDead) continue;
+        
+        const dx = arr.x - (enemy.x + enemy.width/2);
+        const dy = arr.y - (enemy.y + enemy.height/2);
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const hitRadius = enemy.type === 'boss' ? 45 : (enemy.type === 'heavy' ? 24 : 18);
+        
+        if (dist < hitRadius) {
+          hitMonster = true;
+          
+          // 피격 시점 악마가 등불에 노출(진실 규명)되었는가?
+          const isCurrentlyLit = this.checkInsideLightCone(enemy);
+          
+          // 피격 타격 오디오 재생
+          this.audioEngine.playHitSound();
+          
+          const px = arr.x;
+          const py = arr.y;
+          
+          if (isCurrentlyLit) {
+            // 등불 조사: 피 흘리는 농부들 (붉은 피 파티클 + 흐느끼는 영혼 비명소리)
+            for (let k = 0; k < 12; k++) {
+              this.particles.push(new Particle(px, py, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6 - 2, '#a62b2b', Math.random()*3 + 1, 40, 'blood'));
+            }
+            this.doubt += 15;
+            this.audioEngine.playSoulScreamSound();
+          } else {
+            // 등불 미비: 단순 정화 (황금빛 불티 파티클 + 일반 피격음)
+            for (let k = 0; k < 12; k++) {
+              this.particles.push(new Particle(px, py, (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5 - 3, '#d4af37', Math.random()*2 + 1, 45, 'ember'));
+            }
+            this.faith += 10;
+          }
+          
+          // 데미지 전달
+          enemy.takeDamage(arr.damage);
+          
+          // 수치 변경 게이지에 반영
+          if (this.callbacks.onStateUpdate) {
+            this.callbacks.onStateUpdate({ faith: this.faith, doubt: this.doubt });
+          }
+          
+          break; // 화살당 1회 충돌
+        }
+      }
+      
+      if (hitMonster) {
+        this.playerArrows.splice(i, 1);
       }
     }
 
@@ -1500,8 +1600,41 @@ export class Game {
       ctx.restore();
     });
 
-    // [플레이어 드로우]
-    this.player.draw(ctx, this.cameraX);
+    // [플레이어 석궁 볼트 화살 드로우]
+    this.playerArrows.forEach(arr => {
+      ctx.save();
+      ctx.translate(arr.x - this.cameraX, arr.y);
+      ctx.rotate(arr.angle);
+      
+      // 화살 몸체 (황금 볼트)
+      ctx.fillStyle = '#ffdd44';
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 1;
+      
+      ctx.beginPath();
+      ctx.moveTo(-10, -2);
+      ctx.lineTo(8, -2);
+      ctx.lineTo(12, 0);
+      ctx.lineTo(8, 2);
+      ctx.lineTo(-10, 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      
+      // 화살촉 성스러운 꼬리불꽃
+      ctx.fillStyle = 'rgba(255, 210, 77, 0.7)';
+      ctx.beginPath();
+      ctx.moveTo(-10, -4);
+      ctx.lineTo(-16, 0);
+      ctx.lineTo(-10, 4);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.restore();
+    });
+
+    // [플레이어 드로우 - 마우스 좌표를 전달하여 석궁이 동적으로 실시간 조준 회전하도록 연출]
+    this.player.draw(ctx, this.cameraX, this.mouseX, this.mouseY);
 
     // [파티클 드로우]
     this.particles.forEach(p => {
