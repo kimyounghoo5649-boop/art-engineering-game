@@ -1,0 +1,798 @@
+/* ==========================================
+   AD LIMINA: 이단심문관의 등불 - 프리미엄 고딕 CSS 스타일시트
+   ========================================== */
+
+/* 1. 디자인 토큰 (CSS 변수) */
+:root {
+  --color-bg-darkest: #0a0a0c;
+  --color-bg-darker: #121216;
+  --color-bg-glass: rgba(18, 18, 22, 0.75);
+  
+  --color-gold: #d4af37;
+  --color-gold-glow: rgba(212, 175, 55, 0.4);
+  --color-gold-dim: #997d25;
+  
+  --color-crimson: #a62b2b;
+  --color-crimson-glow: rgba(166, 43, 43, 0.4);
+  --color-crimson-dim: #731c1c;
+  
+  --color-text-bright: #e2e2e8;
+  --color-text-muted: #8e8e9c;
+  
+  --font-gothic: 'Cinzel', 'Cinzel Decorative', serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  --border-gold: 1px solid rgba(212, 175, 55, 0.3);
+  --border-crimson: 1px solid rgba(166, 43, 43, 0.3);
+  --border-glass: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* 2. 전역 스타일 초기화 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--color-bg-darkest);
+  color: var(--color-text-bright);
+  font-family: var(--font-body);
+  font-weight: 300;
+  line-height: 1.6;
+  overflow-x: hidden;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* 웹킷 스크롤바 디자인 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-darkest);
+}
+::-webkit-scrollbar-thumb {
+  background: #25252b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gold-dim);
+}
+
+/* 3. 잿가루 입자 배경 효과 (Falling Ashes) */
+.ash-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.ash-particle {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  filter: blur(1px);
+  animation: fall linear infinite;
+}
+
+@keyframes fall {
+  0% {
+    transform: translateY(-20px) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(105vh) translateX(80px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* 4. 헤더 디자인 */
+.gothic-header {
+  padding: 60px 20px 20px 20px;
+  text-align: center;
+  position: relative;
+  z-index: 10;
+}
+
+.academy-tag {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  letter-spacing: 0.25em;
+  color: var(--color-gold);
+  text-transform: uppercase;
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 12px;
+  text-shadow: 0 0 10px var(--color-gold-glow);
+}
+
+.game-title {
+  font-family: var(--font-gothic);
+  font-size: 3.5rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.15), 0 0 40px var(--color-gold-glow);
+  margin-bottom: 4px;
+}
+
+.game-subtitle {
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  font-weight: 300;
+  letter-spacing: 0.4em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.gold-divider {
+  width: 150px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+  margin: 20px auto 0 auto;
+  position: relative;
+}
+
+.gold-divider::after {
+  content: '♦';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--color-gold);
+  font-size: 0.8rem;
+  background: var(--color-bg-darkest);
+  padding: 0 8px;
+}
+
+/* 5. 컨텐츠 레이아웃 */
+.content-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 20px 80px 20px;
+  position: relative;
+  z-index: 10;
+}
+
+/* 6. 게임 뷰포트 액자 프레임 */
+.game-section {
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.game-frame {
+  position: relative;
+  padding: 12px;
+  background: #0f0f13;
+  border: 1px solid #23232a;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(0, 0, 0, 0.8);
+  border-radius: 4px;
+}
+
+/* 액자 모서리 금빛 문양 */
+.frame-corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: var(--color-gold);
+  border-style: solid;
+  pointer-events: none;
+}
+.top-left { top: 4px; left: 4px; border-width: 2px 0 0 2px; }
+.top-right { top: 4px; right: 4px; border-width: 2px 2px 0 0; }
+.bottom-left { bottom: 4px; left: 4px; border-width: 0 0 2px 2px; }
+.bottom-right { bottom: 4px; right: 4px; border-width: 0 2px 2px 0; }
+
+.canvas-wrapper {
+  position: relative;
+  width: 800px;
+  height: 450px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid #1a1a20;
+}
+
+#gameCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated; /* 도트 그래픽 보정 */
+}
+
+/* 캔버스 화면 덮개 공통 (오버레이) */
+.canvas-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(8, 8, 10, 0.95);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  transition: opacity 0.5s ease, visibility 0.5s;
+  padding: 40px;
+  text-align: center;
+  backdrop-filter: blur(8px);
+}
+
+.canvas-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.overlay-title {
+  font-family: var(--font-gothic);
+  font-size: 3rem;
+  letter-spacing: 0.25em;
+  color: var(--color-gold);
+  text-shadow: 0 0 20px var(--color-gold-glow);
+  margin-bottom: 16px;
+}
+
+.overlay-tagline {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--color-text-bright);
+  max-width: 500px;
+  margin-bottom: 30px;
+  line-height: 1.8;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.overlay-notice {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 15px;
+}
+
+.overlay-description {
+  font-size: 1rem;
+  color: var(--color-text-bright);
+  max-width: 550px;
+  margin-bottom: 25px;
+  line-height: 1.8;
+}
+
+/* 프리미엄 버튼 */
+.premium-btn {
+  background: transparent;
+  color: #fff;
+  border: 1px solid var(--color-gold);
+  padding: 12px 36px;
+  font-family: var(--font-gothic);
+  font-size: 1.1rem;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.premium-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300%;
+  height: 300%;
+  background: radial-gradient(circle, var(--color-gold-glow), transparent 70%);
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.5s ease;
+  z-index: 0;
+}
+
+.premium-btn:hover::before {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.premium-btn:hover {
+  border-color: #fff;
+  box-shadow: 0 0 15px var(--color-gold-glow);
+  text-shadow: 0 0 5px #fff;
+}
+
+.premium-btn span, .premium-btn {
+  position: relative;
+  z-index: 2;
+}
+
+/* 7. 엔딩 스탯 정보 */
+.ending-stats {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 30px;
+  padding: 15px 30px;
+  background: rgba(255, 255, 255, 0.03);
+  border: var(--border-glass);
+  border-radius: 4px;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  font-family: var(--font-gothic);
+  margin-left: 8px;
+}
+
+.text-gold {
+  color: var(--color-gold);
+  text-shadow: 0 0 10px var(--color-gold-glow);
+}
+
+.text-crimson {
+  color: var(--color-crimson);
+  text-shadow: 0 0 10px var(--color-crimson-glow);
+}
+
+/* 8. 게임 하단 컨트롤 & 밸런스 바 */
+.game-controls-bar {
+  width: 100%;
+  max-width: 824px;
+  margin-top: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 0 10px;
+}
+
+.control-icon-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: var(--border-glass);
+  color: var(--color-text-bright);
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-family: var(--font-body);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--color-gold-dim);
+}
+
+/* 천칭 저울 밸런스 트랙 */
+.balance-bar-container {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.bar-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.label-faith {
+  color: var(--color-gold);
+}
+
+.label-doubt {
+  color: var(--color-crimson);
+}
+
+.balance-track {
+  flex-grow: 1;
+  height: 12px;
+  background: #191921;
+  border-radius: 6px;
+  position: relative;
+  overflow: visible;
+  border: 1px solid #23232e;
+}
+
+.balance-fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  transition: width 0.5s cubic-bezier(0.1, 0.8, 0.2, 1);
+}
+
+.faith-fill {
+  left: 0;
+  background: linear-gradient(90deg, var(--color-gold-dim), var(--color-gold));
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+.doubt-fill {
+  right: 0;
+  background: linear-gradient(270deg, var(--color-crimson-dim), var(--color-crimson));
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+.balance-pointer {
+  position: absolute;
+  top: -6px;
+  width: 6px;
+  height: 24px;
+  background: #ffffff;
+  border: 1px solid #000;
+  border-radius: 3px;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+  transition: left 0.5s cubic-bezier(0.1, 0.8, 0.2, 1);
+  transform: translateX(-50%);
+  z-index: 5;
+}
+
+/* 9. 정보 섹션 (탭 레이아웃) */
+.info-section {
+  background: var(--color-bg-glass);
+  border: var(--border-glass);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+}
+
+.tab-navigation {
+  display: flex;
+  background: rgba(0, 0, 0, 0.4);
+  border-bottom: var(--border-glass);
+}
+
+.tab-btn {
+  flex-grow: 1;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-family: var(--font-gothic);
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  text-align: center;
+}
+
+.tab-btn:hover {
+  color: var(--color-text-bright);
+}
+
+.tab-btn.active {
+  color: var(--color-gold);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--color-gold);
+  box-shadow: 0 0 10px var(--color-gold-glow);
+}
+
+/* 탭 본문 페인 */
+.tab-content-wrapper {
+  padding: 40px;
+}
+
+.tab-pane {
+  display: none;
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pane-title {
+  font-family: var(--font-gothic);
+  font-size: 1.6rem;
+  letter-spacing: 0.15em;
+  color: #fff;
+  margin-bottom: 30px;
+  border-left: 3px solid var(--color-gold);
+  padding-left: 12px;
+}
+
+/* 10. 조작법 가이드 디자인 */
+.guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.guide-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: var(--border-glass);
+  border-radius: 4px;
+  padding: 24px 20px;
+  text-align: center;
+  transition: transform 0.2s ease, border-color 0.2s;
+}
+
+.guide-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.key-combo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 20px;
+  height: 40px;
+}
+
+.keyboard-key {
+  background: #23232a;
+  border: 1px solid #3c3c46;
+  border-bottom: 3px solid #16161b;
+  border-radius: 4px;
+  color: #ffffff;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
+  font-family: var(--font-body);
+}
+
+.guide-text {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  padding: 0 4px;
+}
+
+.guide-card h4 {
+  font-family: var(--font-gothic);
+  font-size: 1.1rem;
+  color: var(--color-gold);
+  margin-bottom: 8px;
+}
+
+.guide-card p {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.gothic-quote-box {
+  margin-top: 40px;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(212, 175, 55, 0.15);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+  text-align: center;
+}
+
+.quote-text {
+  font-family: var(--font-gothic);
+  font-size: 1.05rem;
+  color: var(--color-gold);
+  font-style: italic;
+  opacity: 0.8;
+  letter-spacing: 0.05em;
+}
+
+/* 11. 아티스트 스테이트먼트 아티클 디자인 */
+.statement-article {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.statement-section {
+  margin-bottom: 35px;
+}
+
+.statement-section h4 {
+  font-family: var(--font-gothic);
+  font-size: 1.25rem;
+  color: var(--color-gold);
+  margin-bottom: 12px;
+  letter-spacing: 0.05em;
+}
+
+.statement-section p {
+  font-size: 0.95rem;
+  color: var(--color-text-bright);
+  margin-bottom: 16px;
+  text-align: justify;
+  opacity: 0.85;
+}
+
+.statement-section blockquote {
+  border-left: 2px solid var(--color-crimson);
+  background: rgba(166, 43, 43, 0.05);
+  padding: 20px 24px;
+  margin: 25px 0;
+  font-family: var(--font-gothic);
+  font-size: 1.15rem;
+  font-style: italic;
+  color: #fff;
+  letter-spacing: 0.05em;
+  line-height: 1.7;
+}
+
+/* 12. 크레딧 명세 표 */
+.credits-content {
+  display: flex;
+  flex-direction: column;
+  gap: 35px;
+}
+
+.credits-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 15px;
+}
+
+.credits-table th, .credits-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: left;
+}
+
+.credits-table th {
+  font-family: var(--font-gothic);
+  font-size: 1rem;
+  color: var(--color-gold);
+  width: 30%;
+  font-weight: normal;
+  letter-spacing: 0.05em;
+}
+
+.credits-table td {
+  font-size: 0.9rem;
+  color: var(--color-text-bright);
+}
+
+.credits-table td ul {
+  list-style-type: none;
+}
+
+.credits-table td li {
+  margin-bottom: 6px;
+  position: relative;
+  padding-left: 14px;
+}
+
+.credits-table td li::before {
+  content: '✦';
+  position: absolute;
+  left: 0;
+  color: var(--color-gold);
+  font-size: 0.65rem;
+  top: 1px;
+}
+
+.asset-attribution {
+  background: rgba(255, 255, 255, 0.01);
+  border: var(--border-glass);
+  padding: 24px;
+  border-radius: 4px;
+}
+
+.asset-attribution h4 {
+  font-family: var(--font-gothic);
+  font-size: 1.1rem;
+  color: #fff;
+  margin-bottom: 12px;
+  letter-spacing: 0.05em;
+}
+
+.asset-attribution p {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* 13. 푸터 */
+.gothic-footer {
+  text-align: center;
+  padding: 50px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.02);
+  margin-top: 60px;
+  position: relative;
+  z-index: 10;
+}
+
+.gothic-footer p {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+.footer-tagline {
+  font-family: var(--font-gothic);
+  font-size: 0.9rem !important;
+  color: var(--color-gold-dim) !important;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* 14. 반응형 레이아웃 및 모바일/노트북 스케일링 */
+@media (max-width: 860px) {
+  .canvas-wrapper {
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%; /* 16:9 비율 유지 */
+  }
+  
+  .game-frame {
+    width: 100%;
+  }
+
+  .game-title {
+    font-size: 2.5rem;
+  }
+  
+  .game-controls-bar {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+
+  .control-icon-btn {
+    justify-content: center;
+  }
+
+  .tab-content-wrapper {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-title {
+    font-size: 2rem;
+  }
+  
+  .tab-navigation {
+    flex-direction: column;
+  }
+  
+  .tab-btn {
+    border-bottom: var(--border-glass);
+    padding: 12px;
+  }
+  
+  .tab-btn.active::after {
+    height: 100%;
+    width: 2px;
+    bottom: 0;
+    left: 0;
+  }
+
+  .ending-stats {
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+  }
+}

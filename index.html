@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>사선에서(Ad Limina): 이단심문관의 등불 - 웹 게임 및 아티스트 스테이트먼트</title>
+  
+  <!-- SEO 메타 태그 -->
+  <meta name="description" content="예술공학개론 과제: 맹목적인 신념과 타자화의 도덕적 딜레마를 다루는 횡스크롤 고딕 픽셀 게임. 이단심문관 헤르만이 되어 성검과 등불로 심판을 완수하세요.">
+  <meta name="keywords" content="이단심문관, 픽셀 게임, 예술공학, 웹게임, 인디게임, 아티스트 스테이트먼트">
+  <meta property="og:title" content="사선에서(Ad Limina): 이단심문관의 등불">
+  <meta property="og:description" content="빛과 어둠, 신앙과 의혹의 경계에 서서 진실을 직시하십시오. 예술공학개론 웹 게임 프로젝트.">
+  <meta property="og:type" content="website">
+
+  <!-- 프리미엄 구글 폰트 연결 (Cinzel: 중세 세리프, Inter: 깔끔한 본문) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  
+  <!-- 메인 CSS 연결 -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 배경 장식 (눈처럼 내리는 잿가루 효과) -->
+  <div class="ash-background" id="ashBackground"></div>
+  
+  <header class="gothic-header">
+    <div class="header-inner">
+      <span class="academy-tag">2026 예술공학개론 웹게임 프로젝트</span>
+      <h1 class="game-title">AD LIMINA</h1>
+      <p class="game-subtitle">사선에서: 이단심문관의 등불</p>
+      <div class="gold-divider"></div>
+    </div>
+  </header>
+
+  <main class="content-container">
+    
+    <!-- 게임 플레이 영역 -->
+    <section class="game-section" aria-label="플레이 캔버스">
+      <div class="game-frame">
+        <!-- 캔버스 테두리 장식 코너 -->
+        <div class="frame-corner top-left"></div>
+        <div class="frame-corner top-right"></div>
+        <div class="frame-corner bottom-left"></div>
+        <div class="frame-corner bottom-right"></div>
+        
+        <div class="canvas-wrapper">
+          <canvas id="gameCanvas" width="800" height="450"></canvas>
+          
+          <!-- 게임 시작 화면 오버레이 -->
+          <div id="startOverlay" class="canvas-overlay">
+            <h2 class="overlay-title">AD LIMINA</h2>
+            <p class="overlay-tagline">“보지 못한 것에 신념을 두는 자는 복되도다. 그러나 네가 베는 자는 진정 누구인가?”</p>
+            <button id="startGameBtn" class="premium-btn">심판 시작</button>
+            <p class="overlay-notice">※ 본 게임은 사운드가 포함되어 있습니다. 원활한 플레이를 위해 볼륨을 켜주세요.</p>
+          </div>
+          
+          <!-- 엔딩/게임오버 오버레이 -->
+          <div id="endingOverlay" class="canvas-overlay hidden">
+            <h2 id="endingTitle" class="overlay-title">심판 완료</h2>
+            <p id="endingDescription" class="overlay-description">당신의 선택에 따른 결과가 여기에 나타납니다.</p>
+            <div id="endingStats" class="ending-stats">
+              <div>최종 신앙심: <span id="finalFaith" class="stat-value text-gold">0%</span></div>
+              <div>최종 의혹도: <span id="finalDoubt" class="stat-value text-crimson">0%</span></div>
+            </div>
+            <button id="restartGameBtn" class="premium-btn">다시 참회하기</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 오디오 & 앰비언스 토글 제어 -->
+      <div class="game-controls-bar">
+        <button id="muteBtn" class="control-icon-btn" title="음악 음소거">
+          <span id="muteIcon">🔊</span> 음악 켜짐
+        </button>
+        <div class="balance-bar-container">
+          <span class="bar-label label-faith">신앙심 (Faith)</span>
+          <div class="balance-track">
+            <div id="faithProgress" class="balance-fill faith-fill" style="width: 50%;"></div>
+            <div id="doubtProgress" class="balance-fill doubt-fill" style="width: 50%;"></div>
+            <div id="balancePointer" class="balance-pointer" style="left: 50%;"></div>
+          </div>
+          <span class="bar-label label-doubt">의혹도 (Doubt)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 플레이 가이드 및 아티스트 스테이트먼트 탭 구조 -->
+    <section class="info-section">
+      
+      <!-- 탭 내비게이션 -->
+      <div class="tab-navigation">
+        <button class="tab-btn active" data-tab="guide">플레이 방법 (How to Play)</button>
+        <button class="tab-btn" data-tab="statement">아티스트 스테이트먼트 (Artist Statement)</button>
+        <button class="tab-btn" data-tab="credits">크레딧 & 개발 정보 (Credits)</button>
+      </div>
+
+      <!-- 탭 본문 영역 -->
+      <div class="tab-content-wrapper">
+        
+        <!-- 1. 플레이 방법 탭 -->
+        <div class="tab-pane active" id="tab-guide">
+          <h3 class="pane-title">조작 및 규칙 가이드</h3>
+          <div class="guide-grid">
+            <div class="guide-card">
+              <div class="key-combo">
+                <span class="keyboard-key">A</span>
+                <span class="keyboard-key">D</span>
+                <span class="guide-text">또는</span>
+                <span class="keyboard-key">←</span>
+                <span class="keyboard-key">→</span>
+              </div>
+              <h4>좌우 이동</h4>
+              <p>좌우로 움직이며 다가오는 그림자 악마들과 거리를 조율합니다.</p>
+            </div>
+            <div class="guide-card">
+              <div class="key-combo">
+                <span class="keyboard-key">Space</span>
+                <span class="guide-text">또는</span>
+                <span class="keyboard-key">W</span>
+                <span class="keyboard-key">↑</span>
+              </div>
+              <h4>성스러운 도약</h4>
+              <p>지면에서 뛰어올라 악마들의 돌진이나 바닥의 공격을 회피합니다.</p>
+            </div>
+            <div class="guide-card">
+              <div class="key-combo">
+                <span class="keyboard-key">J</span>
+              </div>
+              <h4>성검 처단 (Strike)</h4>
+              <p>전방으로 성검을 강력하게 휘둘러 어둠을 물리칩니다. 등불을 비추지 않고 처단할수록 <strong>신앙심(Faith)</strong>이 빠르게 차오릅니다.</p>
+            </div>
+            <div class="guide-card">
+              <div class="key-combo">
+                <span class="keyboard-key">K</span>
+              </div>
+              <h4>진실의 등불 (Illuminate)</h4>
+              <p>전방으로 부채꼴 모양의 등불 빛을 조사합니다. 빛이 비친 그림자는 <strong>비명을 지르는 무고한 인간의 본래 형상</strong>으로 드러나며, 이때 처단하면 <strong>의혹도(Doubt)</strong>가 늘어납니다.</p>
+            </div>
+          </div>
+          
+          <div class="gothic-quote-box">
+            <p class="quote-text">“눈을 감으면 신앙은 순결하지만 세상은 피로 물들고, 눈을 뜨면 세상은 참회하나 신념은 부서지리라.”</p>
+          </div>
+        </div>
+
+        <!-- 2. 아티스트 스테이트먼트 탭 -->
+        <div class="tab-pane" id="tab-statement">
+          <article class="statement-article">
+            <h3 class="pane-title">아티스트 스테이트먼트 (Artist Statement)</h3>
+            
+            <section class="statement-section">
+              <h4>1. 작품 개요: 무엇을 만들었는가?</h4>
+              <p>
+                본 작품 <strong>&lt;사선에서(Ad Limina): 이단심문관의 등불&gt;</strong>은 중세 시대의 이단심문관 '헤르만'의 시점을 빌린 횡스크롤 2D 액션 게임화된 경험(Gamified Experience)입니다. 플레이어는 화면을 가로지르며 엄습하는 괴물(그림자 악마)들을 물리치는 영웅적인 의무를 마주하지만, 그의 무기 중 하나인 '성스러운 등불'을 켜는 순간, 그들이 사실은 흉악한 괴물이 아니라 우리와 똑같은 나약한 인간들(마녀사냥으로 희생되는 무고한 마을 사람들)이었음을 알게 됩니다.
+              </p>
+            </section>
+
+            <section class="statement-section">
+              <h4>2. 게임 기믹의 메타포: 맹목적 신앙과 고통스러운 직시</h4>
+              <p>
+                일반적인 액션 게임은 적을 처단하고 격퇴하는 과정에서 '쾌감'과 '점수'라는 보상을 줍니다. 본 게임 또한 등불을 켜지 않고 단순히 성검만 휘둘러 적을 죽이면 아무런 심리적 저항 없이 매끄럽게 게임을 클리어할 수 있습니다. 상단의 '신앙심(Faith)' 게이지는 황금빛으로 가득 차며 플레이어를 찬란한 성자로 추앙합니다.
+              </p>
+              <p>
+                그러나 진실을 마주하기 위해 '등불(K 키)'을 밝히는 순간, 캔버스 위의 그림자는 참혹한 인간의 본래 모습과 흐느끼는 울음소리로 변모합니다. 진실을 직시하는 순간 '의혹도(Doubt)' 게이지가 상승하며 화면 가장자리에는 죄책감을 상징하는 피의 비네팅이 덮치고, 사운드와 조작이 점점 무겁고 뒤틀리게 변합니다. 플레이어는 **"편리한 눈가림을 통한 가짜 구원(맹신의 엔딩)"**과 **"자신의 정의가 폭력이었음을 깨닫는 참혹한 자각(성찰의 엔딩)"** 사이에서 매 순간 갈등을 겪게 됩니다.
+              </p>
+            </section>
+
+            <section class="statement-section">
+              <h4>3. 현대 사회의 '악마화'에 대한 예술적 질문</h4>
+              <p>
+                마녀사냥과 이단심문은 중세의 유물이 아닙니다. 오늘날 현대 사회에서도 인터넷 커뮤니티, 정치적 진영, 미디어 속에서 '타자(Other)'를 손쉽게 악마화하고 집단적인 정의감을 충족하는 행위가 반복되고 있습니다. 
+                본 작품은 플레이어에게 다음과 같은 질문을 던집니다.
+              </p>
+              <blockquote>
+                “당신이 정의의 이름으로 휘두르는 칼날 아래 쓰러진 자들은 진정 악마였습니까? 아니면 당신의 맹신이 만들어낸 악마였습니까?”
+              </blockquote>
+            </section>
+
+            <section class="statement-section">
+              <h4>4. AI 에이전트와의 협력: 바이브 코딩(Vibe Coding)을 통한 실천</h4>
+              <p>
+                본 예술공학 프로젝트는 고도의 상호작용적 철학을 기술적으로 아름답게 구현하기 위해 인간 창작자와 AI 코딩 에이전트(Antigravity)의 긴밀한 페어 프로그래밍 협업을 통해 제작되었습니다. 
+                물리 엔진 설계, 실시간 캔버스 마스킹 광원 렌더링, Web Audio API를 활용한 순수 디지털 SFX 신디사이징에 이르기까지 AI와 실시간으로 아이디어를 조율하며, 복잡한 외부 프레임워크의 과도한 종속성을 탈피하고 순수한 고성능 바닐라 기술만으로 시적이고 미학적인 화면을 연출해내는 실천적 '아트 엔지니어링'을 지향했습니다.
+              </p>
+            </section>
+          </article>
+        </div>
+
+        <!-- 3. 크레딧 탭 -->
+        <div class="tab-pane" id="tab-credits">
+          <h3 class="pane-title">개발진 및 기술 명세</h3>
+          <div class="credits-content">
+            <table class="credits-table">
+              <tr>
+                <th>과목명</th>
+                <td>예술공학개론 (Introduction to Art Engineering)</td>
+              </tr>
+              <tr>
+                <th>작품명</th>
+                <td>사선에서 (Ad Limina): 이단심문관의 등불</td>
+              </tr>
+              <tr>
+                <th>개발 및 디자인</th>
+                <td>인간 크리에이터 & AI 페어 프로그래밍 (Antigravity)</td>
+              </tr>
+              <tr>
+                <th>사용 기술 (Tech Stack)</th>
+                <td>
+                  <ul>
+                    <li>HTML5 Semantic Elements (SEO 최적화)</li>
+                    <li>Vanilla CSS3 (Responsive Gothic Glassmorphism Layout)</li>
+                    <li>Vanilla JavaScript (ES6 Modules)</li>
+                    <li>HTML5 Canvas 2D API (Lighting Cone Masking, Particle System)</li>
+                    <li>Web Audio API (Procedural Medieval Sound Synthesizer)</li>
+                  </ul>
+                </td>
+              </tr>
+              <tr>
+                <th>배포 플랫폼</th>
+                <td>Vercel Static Web Hosting</td>
+              </tr>
+            </table>
+            
+            <div class="asset-attribution">
+              <h4>에셋 및 오디오 소스 정보</h4>
+              <p>본 게임의 모든 시각적 드로잉(플레이어, 몬스터, 배경, 입자)과 효과음(검 휘두르는 소리, 몬스터 비명, 성가 음악 효과)은 외부 라이브러리나 음원을 무단으로 도용하지 않고, <strong>HTML5 Canvas 그리기 공식과 Web Audio API 발진기(Oscillators)를 활용해 100% 절차적(Procedural)으로 실시간 생성</strong>되었습니다. 따라서 저작권 문제로부터 완전히 자유로우며 초경량 용량을 유지합니다.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="gothic-footer">
+    <p>© 2026 Ad Limina - 예술공학개론 과제 웹 게임. All Rights Reserved.</p>
+    <p class="footer-tagline">“Tenebrae non superabunt eam (어둠은 빛을 이기지 못하리라)”</p>
+  </footer>
+
+  <!-- 메인 게임 자바스크립트 모듈 로드 -->
+  <script type="module" src="main.js"></script>
+</body>
+</html>
